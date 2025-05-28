@@ -170,148 +170,15 @@ function App() {
         color: 'white',
         textAlign: 'left',
         fontSize: '20px',
-        fontWeight: 'bold',
-        display:'flex',
-        justifyContent: 'left',
-         alignItems: 'center',
-         
+        fontWeight: 'bold'
       }}>
-         <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: '#4a90e2',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              flexShrink: 0,
-              marginTop: '4px',
-              position: 'relative',
-              zIndex: 10,
-              margin:'12px',
-            }}>
-              B
-            </div>
-
-       <span> Chatbot </span>
-      </div>
-    
-
-      {/* Messages Container */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '16px',
-        backgroundColor: '#ffffff'
-      }}>
-   {messages.map((message, i) => (
-  <div
-    key={i}
-    style={{
-      marginBottom: '16px',
-      display: 'flex',
-      justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
-      alignItems: 'flex-start',
-      gap: message.sender === 'ChatGPT' ? '8px' : '0'
-    }}
-  >
-    {message.sender === 'ChatGPT' && (
-      <div style={{
-        width: '32px',
-        height: '32px',
-        borderRadius: '50%',
-        backgroundColor: '#4a90e2',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        flexShrink: 0,
-        marginTop: '4px'
-      }}>
-        B
-      </div>
-    )}
-    <div
-      style={{
-        maxWidth: '70%',
-        padding: '12px 16px',
-        borderRadius: '18px',
-        backgroundColor: message.sender === 'user' ? '#999' : '#e9ecef',
-        color: message.sender === 'user' ? 'white' : '#333',
-        wordWrap: 'break-word'
-      }}
-    >
-      <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
-        {message.message}
-      </div>
-      <div style={{
-        fontSize: '11px',
-        opacity: 0.7,
-        marginTop: '4px'
-      }}>
-        {message.sentTime}
-      </div>
-    </div>
-  </div>
-))}
-
-        {isTyping && (
-          <div style={{
-            marginBottom: '16px',
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'flex-start',
-            gap: '8px',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: '#4a90e2',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              flexShrink: 0,
-              marginTop: '4px',
-              position: 'relative',
-              zIndex: 10
-            }}>
-              B
-            </div>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '18px',
-              backgroundColor: '#e9ecef',
-              color: '#666',
-              fontStyle: 'italic',
-              position: 'relative',
-              zIndex: 5
-            }}>
-              Bot is typing...
-            </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
+        Chatbot
       </div>
 
- {/* File Upload Controls //////////////////////////////////////////////////// */}
-        <div className="upload"  >
-
-     
+      {/* File Upload Controls */}
       <div style={{ 
         padding: "12px", 
-      /*  borderBottom: "1px solid #e0e0e0",*/
+        borderBottom: "1px solid #e0e0e0",
         backgroundColor: "#f8f9fa",
         display: "flex",
         alignItems: "center",
@@ -328,68 +195,107 @@ function App() {
           onClick={() => fileInputRef.current?.click()}
           style={{
             padding: "8px 16px",
-          backgroundColor: "#4a90e2",
+            backgroundColor: "darkblue",
             color: "white",
             border: "none",
-            borderRadius: "16px",
+            borderRadius: "6px",
             cursor: "pointer",
             fontSize: "12px",
             fontWeight: "500"
           }}
         >
-         +
+          Upload Text File
         </button>
         
         {uploadedFileContent && (
-          <div className="button-document"
-          style={{
-              backgroundColor: "#fff",
-        width:"1w0px",
-        height:"60px",
-        display: 'flex',
-       
-        justifyContent: 'center',
-          }}
-          >
+          <>
             <span style={{ 
-              padding: "2px",
-              fontSize: "10px", 
-              lineHeight:"1.3",
+              fontSize: "13px", 
               color: "#28a745",
-              fontWeight: "500",
-              padding: "20px",
+              fontWeight: "500"
             }}>
-              ✓ File loaded <br/>({uploadedFileContent.length} chars)
+              ✓ File loaded ({uploadedFileContent.length} chars)
             </span>
             <button
               onClick={clearUploadedFile}
-
               style={{
-                margin:"4px",
-                height:"20px",
-                width:"20px",
-                 color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-                 padding: "8px 8px",
-                backgroundColor: "#000",
+                padding: "8px 16px",
+                backgroundColor: "#dc3545",
                 color: "white",
                 border: "none",
-                borderRadius: "4px",
+                borderRadius: "6px",
                 cursor: "pointer",
                 fontSize: "12px"
               }}
             >
-              x
+              Clear File
             </button>
-          </div>
+          </>
         )}
       </div>
+
+      {/* Messages Container */}
+      <div style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: '16px',
+        backgroundColor: '#ffffff'
+      }}>
+        {messages.map((message, i) => (
+          <div
+            key={i}
+            style={{
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '70%',
+                padding: '12px 16px',
+                borderRadius: '18px',
+                backgroundColor: message.sender === 'user' ? '#bbb' : '#e9ecef',
+                color: message.sender === 'user' ? 'white' : '#333',
+                wordWrap: 'break-word'
+              }}
+            >
+              <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                {message.message}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                opacity: 0.7,
+                marginTop: '4px'
+              }}>
+                {message.sentTime}
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {isTyping && (
+          <div style={{
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'flex-start'
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '18px',
+              backgroundColor: '#e9ecef',
+              color: '#666',
+              fontStyle: 'italic'
+            }}>
+              ChatGPT is typing...
+            </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
       </div>
 
-
-      {/* Input Container /////////////////////////////////////////////////////*/}
+      {/* Input Container */}
       <div style={{
         padding: '16px',
         borderTop: '1px solid #e0e0e0',
@@ -419,25 +325,24 @@ function App() {
             }}
             rows="1"
           />
-{/*
+          {/*
           <button
             onClick={handleSend}
             style={{
-              padding: '12px 20px',
-              backgroundColor: '#333',
+              padding: '8px 16px',
+              backgroundColor: 'darkblue',
               color: 'white',
               border: 'none',
-              borderRadius: '20px',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '500',
               minWidth: '60px'
             }}
           >
-
             Send
           </button>
-           */}
+          */}
         </div>
       </div>
     </div>
