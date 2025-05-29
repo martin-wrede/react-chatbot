@@ -10,8 +10,7 @@ function App() {
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]); // [{ name, content }]
-  const [selectedFileIndex, setSelectedFileIndex] = useState(null);
+  const [uploadedFileContent, setUploadedFileContent] = useState('');
   const [inputValue, setInputValue] = useState('');
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -26,26 +25,18 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target.result;
-        setUploadedFiles(prev => [...prev, { name: file.name, content }]);
+        setUploadedFileContent(content);
+        setMessages(prev => [...prev, {
+          message: `📄 File uploaded: ${file.name} (${content.length} characters)`,
+          sender: "user",
+          sentTime: new Date().toLocaleTimeString()
+        }]);
       };
       reader.readAsText(file);
     } else {
       alert('Please upload a text file (.txt)');
     }
     event.target.value = '';
-  };
-
-  const selectFile = (index) => {
-    setSelectedFileIndex(index);
-  };
-
-  const deleteFile = (indexToDelete) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== indexToDelete));
-    if (selectedFileIndex === indexToDelete) {
-      setSelectedFileIndex(null);
-    } else if (selectedFileIndex > indexToDelete) {
-      setSelectedFileIndex(prev => prev - 1);
-    }
   };
 
   const handleSend = async () => {
@@ -70,6 +61,7 @@ function App() {
   };
 
   async function processMessageToChatGPT(chatMessages) {
+    // Convert messages to the format expected by the API
     const apiMessages = chatMessages.map(msg => ({
       role: msg.sender === "ChatGPT" ? "assistant" : "user",
       content: msg.message
@@ -77,10 +69,11 @@ function App() {
 
     const requestBody = {
       messages: apiMessages,
-      uploadedFileContent: selectedFileIndex !== null ? uploadedFiles[selectedFileIndex]?.content : null
+      uploadedFileContent: uploadedFileContent || null
     };
 
     try {
+      // Call the Cloudflare Pages function instead of OpenAI directly
       const response = await fetch("/functions/ai", {
         method: "POST",
         headers: {
@@ -95,7 +88,7 @@ function App() {
 
       const data = await response.json();
       const reply = data.reply || "Sorry, I encountered an error.";
-
+      
       setMessages([...chatMessages, {
         message: reply,
         sender: "ChatGPT",
@@ -111,6 +104,15 @@ function App() {
     }
     setIsTyping(false);
   }
+
+  const clearUploadedFile = () => {
+    setUploadedFileContent('');
+    setMessages(prev => [...prev, {
+      message: "📄 File content cleared from context",
+      sender: "user",
+      sentTime: new Date().toLocaleTimeString()
+    }]);
+  };
 
   return (
     <div className="app-container">
@@ -142,25 +144,14 @@ function App() {
       </div>
 
       <div className="upload-bar">
-        <input
-          type="file"
-          accept=".txt"
-          onChange={handleFileUpload}
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-        />
+        <input type="file" accept=".txt" onChange={handleFileUpload} ref={fileInputRef} style={{ display: 'none' }} />
         <button className="upload-button" onClick={() => fileInputRef.current?.click()}>+</button>
-
-        <div className="file-list">
-          {uploadedFiles.map((file, index) => (
-            <div key={index} className={`file-status ${selectedFileIndex === index ? 'selected' : ''}`}>
-              <span onClick={() => selectFile(index)}>
-                📄 {file.name} ({file.content.length} chars)
-              </span>
-              <button onClick={() => deleteFile(index)}>x</button>
-            </div>
-          ))}
-        </div>
+        {uploadedFileContent && (
+          <div className="file-status">
+            <span>✓ File loaded <br />({uploadedFileContent.length} chars)</span>
+            <button onClick={clearUploadedFile}>x</button>
+          </div>
+        )}
       </div>
 
       <div className="input-bar">
@@ -168,9 +159,10 @@ function App() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={selectedFileIndex !== null ? "Ask about the selected file..." : "Type your message here..."}
+          placeholder={uploadedFileContent ? "Ask about the uploaded file..." : "Type your message here..."}
           rows="1"
         />
+        {/* Add optional send button if needed */}
       </div>
     </div>
   );

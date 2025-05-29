@@ -10,8 +10,9 @@ function App() {
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]); // [{ name, content }]
-  const [selectedFileIndex, setSelectedFileIndex] = useState(null);
+  const [uploadedFileContent, setUploadedFileContent] = useState('');
+
+  const [uploadedFileMeta, setUploadedFileMeta] = useState(null); // { name, length }
   const [inputValue, setInputValue] = useState('');
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -26,7 +27,8 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target.result;
-        setUploadedFiles(prev => [...prev, { name: file.name, content }]);
+        setUploadedFileContent(content);
+        setUploadedFileMeta({ name: file.name, length: content.length });
       };
       reader.readAsText(file);
     } else {
@@ -35,17 +37,10 @@ function App() {
     event.target.value = '';
   };
 
-  const selectFile = (index) => {
-    setSelectedFileIndex(index);
-  };
-
-  const deleteFile = (indexToDelete) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== indexToDelete));
-    if (selectedFileIndex === indexToDelete) {
-      setSelectedFileIndex(null);
-    } else if (selectedFileIndex > indexToDelete) {
-      setSelectedFileIndex(prev => prev - 1);
-    }
+  const clearUploadedFile = () => {
+    setUploadedFileContent('');
+    setUploadedFileMeta(null);
+  
   };
 
   const handleSend = async () => {
@@ -77,7 +72,7 @@ function App() {
 
     const requestBody = {
       messages: apiMessages,
-      uploadedFileContent: selectedFileIndex !== null ? uploadedFiles[selectedFileIndex]?.content : null
+      uploadedFileContent: uploadedFileContent || null
     };
 
     try {
@@ -151,16 +146,15 @@ function App() {
         />
         <button className="upload-button" onClick={() => fileInputRef.current?.click()}>+</button>
 
-        <div className="file-list">
-          {uploadedFiles.map((file, index) => (
-            <div key={index} className={`file-status ${selectedFileIndex === index ? 'selected' : ''}`}>
-              <span onClick={() => selectFile(index)}>
-                📄 {file.name} ({file.content.length} chars)
-              </span>
-              <button onClick={() => deleteFile(index)}>x</button>
-            </div>
-          ))}
-        </div>
+        {uploadedFileMeta && (
+          <div className="file-status">
+            <span>
+              📄 {uploadedFileMeta.name}<br />
+              ({uploadedFileMeta.length} chars)
+            </span>
+            <button onClick={clearUploadedFile}>x</button>
+          </div>
+        )}
       </div>
 
       <div className="input-bar">
@@ -168,7 +162,7 @@ function App() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={selectedFileIndex !== null ? "Ask about the selected file..." : "Type your message here..."}
+          placeholder={uploadedFileContent ? "Ask about the uploaded file..." : "Type your message here..."}
           rows="1"
         />
       </div>
