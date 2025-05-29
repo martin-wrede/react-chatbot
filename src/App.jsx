@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import './App.css';
 
-const OPENAI_API_KEY = 'your-api-key-here';
-
-const systemMessage = {
-  role: 'system',
-  content: "Explain things like you're talking to a software professional with 2 years of experience."
-};
-
 function App() {
   const [messages, setMessages] = useState([
     {
@@ -68,40 +61,41 @@ function App() {
   };
 
   async function processMessageToChatGPT(chatMessages) {
+    // Convert messages to the format expected by the API
     const apiMessages = chatMessages.map(msg => ({
       role: msg.sender === "ChatGPT" ? "assistant" : "user",
       content: msg.message
     }));
 
-    const enhancedSystemMessage = uploadedFileContent
-      ? {
-          ...systemMessage,
-          content: `${systemMessage.content}\n\nYou also have access to this uploaded file content:\n\n${uploadedFileContent}`
-        }
-      : systemMessage;
-
-    const body = {
-      model: "gpt-3.5-turbo",
-      messages: [enhancedSystemMessage, ...apiMessages]
+    const requestBody = {
+      messages: apiMessages,
+      uploadedFileContent: uploadedFileContent || null
     };
 
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      // Call the Cloudflare Pages function instead of OpenAI directly
+      const response = await fetch("/functions/ai", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(requestBody)
       });
+
+      if (!response.ok) {
+        throw new Error(`Function error: ${response.status}`);
+      }
+
       const data = await response.json();
-      const reply = data.choices?.[0]?.message?.content || "Sorry, I encountered an error.";
+      const reply = data.reply || "Sorry, I encountered an error.";
+      
       setMessages([...chatMessages, {
         message: reply,
         sender: "ChatGPT",
         sentTime: new Date().toLocaleTimeString()
       }]);
-    } catch {
+    } catch (error) {
+      console.error('Error calling chat function:', error);
       setMessages([...chatMessages, {
         message: "Sorry, I encountered a network error.",
         sender: "ChatGPT",
