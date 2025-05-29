@@ -1,55 +1,37 @@
-// functions/ai.js
-
-// This function handles requests sent to /api/ai
 export async function onRequest(context) {
-    const { request, env } = context;
-  
-    // Handle CORS preflight requests
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*", // Optionally, restrict to your domain
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      });
-    }
-  
-    try {
-      // Parse the JSON payload
-      const { prompt } = await request.json();
-      if (!prompt) {
-        return new Response(JSON.stringify({ error: "Missing 'prompt' field." }), {
-          status: 400,
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        });
-      }
-  
-      // Call OpenAI's image generation endpoint
-      const response = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          n: 1,                // Number of images to generate
-          size: "1024x1024"    // Options: "256x256", "512x512", or "1024x1024"
-        })
-      });
-  
-      const json = await response.json();
-  
-      return new Response(JSON.stringify(json), {
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
-    }
+  const { request } = context;
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
-  
+
+  try {
+    const body = await request.json();
+    const userMessage = body.message;
+
+    // You can replace this with your Claude/OpenAI API logic
+    const apiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${YOUR_OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+
+    const data = await apiResponse.json();
+    const reply = data.choices[0].message.content;
+
+    return new Response(JSON.stringify({ reply }), {
+      headers: { "Content-Type": "application/json" },
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}

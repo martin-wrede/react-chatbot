@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react';
+import './App.css';
 
-// For demo purposes - replace with your actual API key
 const OPENAI_API_KEY = 'your-api-key-here';
 
 const systemMessage = {
-  "role": "system", 
-  "content": "Explain things like you're talking to a software professional with 2 years of experience."
-}
+  role: 'system',
+  content: "Explain things like you're talking to a software professional with 2 years of experience."
+};
 
 function App() {
   const [messages, setMessages] = useState([
@@ -22,12 +22,8 @@ function App() {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
   const handleFileUpload = (event) => {
@@ -37,34 +33,26 @@ function App() {
       reader.onload = (e) => {
         const content = e.target.result;
         setUploadedFileContent(content);
-        
-        // Add a message showing the file was uploaded
-        const fileMessage = {
+        setMessages(prev => [...prev, {
           message: `📄 File uploaded: ${file.name} (${content.length} characters)`,
           sender: "user",
           sentTime: new Date().toLocaleTimeString()
-        };
-        
-        setMessages(prev => [...prev, fileMessage]);
+        }]);
       };
       reader.readAsText(file);
     } else {
       alert('Please upload a text file (.txt)');
     }
-    
-    // Reset the input
     event.target.value = '';
   };
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
-
     const newMessage = {
       message: inputValue,
       sender: "user",
       sentTime: new Date().toLocaleTimeString()
     };
-
     const newMessages = [...messages, newMessage];
     setMessages(newMessages);
     setInputValue('');
@@ -80,368 +68,110 @@ function App() {
   };
 
   async function processMessageToChatGPT(chatMessages) {
-    let apiMessages = chatMessages.map((messageObject) => {
-      let role = "";
-      if (messageObject.sender === "ChatGPT") {
-        role = "assistant";
-      } else {
-        role = "user";
-      }
-      return { role: role, content: messageObject.message}
-    });
+    const apiMessages = chatMessages.map(msg => ({
+      role: msg.sender === "ChatGPT" ? "assistant" : "user",
+      content: msg.message
+    }));
 
-    // If there's uploaded file content, include it in the system message
-    let enhancedSystemMessage = systemMessage;
-    if (uploadedFileContent) {
-      enhancedSystemMessage = {
-        ...systemMessage,
-        content: `${systemMessage.content}\n\nYou also have access to this uploaded file content:\n\n${uploadedFileContent}`
-      };
-    }
+    const enhancedSystemMessage = uploadedFileContent
+      ? {
+          ...systemMessage,
+          content: `${systemMessage.content}\n\nYou also have access to this uploaded file content:\n\n${uploadedFileContent}`
+        }
+      : systemMessage;
 
-    const apiRequestBody = {
-      "model": "gpt-3.5-turbo",
-      "messages": [
-        enhancedSystemMessage,
-        ...apiMessages
-      ]
-    }
+    const body = {
+      model: "gpt-3.5-turbo",
+      messages: [enhancedSystemMessage, ...apiMessages]
+    };
 
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(apiRequestBody)
+        body: JSON.stringify(body)
       });
-
       const data = await response.json();
-      
-      if (data.choices && data.choices[0]) {
-        setMessages([...chatMessages, {
-          message: data.choices[0].message.content,
-          sender: "ChatGPT",
-          sentTime: new Date().toLocaleTimeString()
-        }]);
-      } else {
-        setMessages([...chatMessages, {
-          message: "Sorry, I encountered an error processing your request.",
-          sender: "ChatGPT",
-          sentTime: new Date().toLocaleTimeString()
-        }]);
-      }
-    } catch (error) {
-      console.error('Error:', error);
+      const reply = data.choices?.[0]?.message?.content || "Sorry, I encountered an error.";
       setMessages([...chatMessages, {
-        message: "Sorry, I encountered a network error. Please try again.",
+        message: reply,
+        sender: "ChatGPT",
+        sentTime: new Date().toLocaleTimeString()
+      }]);
+    } catch {
+      setMessages([...chatMessages, {
+        message: "Sorry, I encountered a network error.",
         sender: "ChatGPT",
         sentTime: new Date().toLocaleTimeString()
       }]);
     }
-    
     setIsTyping(false);
   }
 
   const clearUploadedFile = () => {
     setUploadedFileContent('');
-    const clearMessage = {
+    setMessages(prev => [...prev, {
       message: "📄 File content cleared from context",
       sender: "user",
       sentTime: new Date().toLocaleTimeString()
-    };
-    setMessages(prev => [...prev, clearMessage]);
+    }]);
   };
 
   return (
-    <div style={{ 
-      maxWidth: '800px', 
-      margin: '0 auto', 
-      height: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '16px',
-        backgroundColor: '#2c3e50',
-        color: 'white',
-        textAlign: 'left',
-        fontSize: '20px',
-        fontWeight: 'bold',
-        display:'flex',
-        justifyContent: 'left',
-         alignItems: 'center',
-         
-      }}>
-         <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: '#4a90e2',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              flexShrink: 0,
-              marginTop: '4px',
-              position: 'relative',
-              zIndex: 10,
-              margin:'12px',
-            }}>
-              B
+    <div className="app-container">
+      <div className="header">
+        <div className="bot-icon">B</div>
+        <span>Chatbot x</span>
+      </div>
+
+      <div className="messages-container">
+        {messages.map((msg, i) => (
+          <div key={i} className={`message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>
+            {msg.sender === 'ChatGPT' && <div className="avatar">B</div>}
+            <div className={`message-bubble ${msg.sender}`}>
+              <div className="message-text">{msg.message}</div>
+              <div className="timestamp">{msg.sentTime}</div>
             </div>
-
-       <span> Chatbot </span>
-      </div>
-    
-
-      {/* Messages Container */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '16px',
-        backgroundColor: '#ffffff'
-      }}>
-   {messages.map((message, i) => (
-  <div
-    key={i}
-    style={{
-      marginBottom: '16px',
-      display: 'flex',
-      justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
-      alignItems: 'flex-start',
-      gap: message.sender === 'ChatGPT' ? '8px' : '0'
-    }}
-  >
-    {message.sender === 'ChatGPT' && (
-      <div style={{
-        width: '32px',
-        height: '32px',
-        borderRadius: '50%',
-        backgroundColor: '#4a90e2',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        flexShrink: 0,
-        marginTop: '4px'
-      }}>
-        B
-      </div>
-    )}
-    <div
-      style={{
-        maxWidth: '70%',
-        padding: '12px 16px',
-        borderRadius: '18px',
-        backgroundColor: message.sender === 'user' ? '#999' : '#e9ecef',
-        color: message.sender === 'user' ? 'white' : '#333',
-        wordWrap: 'break-word'
-      }}
-    >
-      <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
-        {message.message}
-      </div>
-      <div style={{
-        fontSize: '11px',
-        opacity: 0.7,
-        marginTop: '4px'
-      }}>
-        {message.sentTime}
-      </div>
-    </div>
-  </div>
-))}
+          </div>
+        ))}
 
         {isTyping && (
-          <div style={{
-            marginBottom: '16px',
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'flex-start',
-            gap: '8px',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: '#4a90e2',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              flexShrink: 0,
-              marginTop: '4px',
-              position: 'relative',
-              zIndex: 10
-            }}>
-              B
-            </div>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '18px',
-              backgroundColor: '#e9ecef',
-              color: '#666',
-              fontStyle: 'italic',
-              position: 'relative',
-              zIndex: 5
-            }}>
-              Bot is typing...
+          <div className="message-row bot typing">
+            <div className="avatar">B</div>
+            <div className="message-bubble bot">
+              <em>Bot is typing...</em>
             </div>
           </div>
         )}
-        
         <div ref={messagesEndRef} />
       </div>
 
- {/* File Upload Controls //////////////////////////////////////////////////// */}
-        <div className="upload"  >
-
-     
-      <div style={{ 
-        padding: "12px", 
-      /*  borderBottom: "1px solid #e0e0e0",*/
-        backgroundColor: "#f8f9fa",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px"
-      }}>
-        <input
-          type="file"
-          accept=".txt"
-          onChange={handleFileUpload}
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            padding: "8px 16px",
-          backgroundColor: "#4a90e2",
-            color: "white",
-            border: "none",
-            borderRadius: "16px",
-            cursor: "pointer",
-            fontSize: "12px",
-            fontWeight: "500"
-          }}
-        >
-         +
-        </button>
-        
+      <div className="upload-bar">
+        <input type="file" accept=".txt" onChange={handleFileUpload} ref={fileInputRef} style={{ display: 'none' }} />
+        <button className="upload-button" onClick={() => fileInputRef.current?.click()}>+</button>
         {uploadedFileContent && (
-          <div className="button-document"
-          style={{
-              backgroundColor: "#fff",
-        width:"1w0px",
-        height:"60px",
-        display: 'flex',
-       
-        justifyContent: 'center',
-          }}
-          >
-            <span style={{ 
-              padding: "2px",
-              fontSize: "10px", 
-              lineHeight:"1.3",
-              color: "#28a745",
-              fontWeight: "500",
-              padding: "20px",
-            }}>
-              ✓ File loaded <br/>({uploadedFileContent.length} chars)
-            </span>
-            <button
-              onClick={clearUploadedFile}
-
-              style={{
-                margin:"4px",
-                height:"20px",
-                width:"20px",
-                 color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-                 padding: "8px 8px",
-                backgroundColor: "#000",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "12px"
-              }}
-            >
-              x
-            </button>
+          <div className="file-status">
+            <span>✓ File loaded <br />({uploadedFileContent.length} chars)</span>
+            <button onClick={clearUploadedFile}>x</button>
           </div>
         )}
       </div>
-      </div>
 
-
-      {/* Input Container /////////////////////////////////////////////////////*/}
-      <div style={{
-        padding: '16px',
-        borderTop: '1px solid #e0e0e0',
-        backgroundColor: '#f8f9fa'
-      }}>
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'flex-end'
-        }}>
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={uploadedFileContent ? "Ask about the uploaded file..." : "Type your message here..."}
-            style={{
-              flex: 1,
-              minHeight: '20px',
-              maxHeight: '120px',
-              padding: '12px',
-              border: '1px solid #ddd',
-              borderRadius: '20px',
-              fontSize: '14px',
-              fontFamily: 'inherit',
-              resize: 'none',
-              outline: 'none'
-            }}
-            rows="1"
-          />
-{/*
-          <button
-            onClick={handleSend}
-            style={{
-              padding: '12px 20px',
-              backgroundColor: '#333',
-              color: 'white',
-              border: 'none',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              minWidth: '60px'
-            }}
-          >
-
-            Send
-          </button>
-           */}
-        </div>
+      <div className="input-bar">
+        <textarea
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder={uploadedFileContent ? "Ask about the uploaded file..." : "Type your message here..."}
+          rows="1"
+        />
+        {/* Add optional send button if needed */}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

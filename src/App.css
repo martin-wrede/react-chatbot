@@ -40,3 +40,145 @@
 .read-the-docs {
   color: #888;
 }
+
+.app-container {
+  max-width: 800px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  padding: 16px;
+  background-color: #2c3e50;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.bot-icon, .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #4a90e2;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 4px 12px 4px 0;
+}
+
+.messages-container {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background-color: #ffffff;
+}
+
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.message-row.user {
+  justify-content: flex-end;
+}
+
+.message-row.bot {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  word-wrap: break-word;
+}
+
+.message-bubble.user {
+  background-color: #999;
+  color: white;
+}
+
+.message-bubble.bot {
+  background-color: #e9ecef;
+  color: #333;
+}
+
+.message-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.timestamp {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.upload-bar {
+  padding: 12px;
+  background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-button {
+  padding: 8px 16px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.file-status {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  color: #28a745;
+  gap: 10px;
+}
+
+.file-status button {
+  height: 20px;
+  width: 20px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.input-bar {
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  display: flex;
+}
+
+.input-bar textarea {
+  flex: 1;
+  min-height: 20px;
+  max-height: 120px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+}
