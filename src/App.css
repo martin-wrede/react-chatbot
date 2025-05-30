@@ -128,39 +128,56 @@
   background-color: #f8f9fa;
   display: flex;
   align-items: center;
+  
   gap: 12px;
 }
 
 .upload-button {
-  padding: 8px 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+   background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+    justify-content: center;
   background-color: #2c3e50;
   color: white;
-  border: none;
-  border-radius: 16px;
+  border: 0px;
+ 
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
+
 }
 
 .file-status {
-  display: flex;
-  align-items: center;
+  margin-right:10px;
+ 
   background-color: #fff;
-  padding: 10px;
-  border-radius: 8px;
+  padding:10px;
+  border-radius: 2px;
   font-size: 10px;
   color: #28a745;
-  gap: 10px;
+  gap: 8px;
+   display:flex;
+ /* align-items: left;*/
+   float:left;
+    justify-content:space-between;
 }
 
 .file-status button {
-  height: 20px;
-  width: 20px;
+  height: 15px;
+  width: 15px;
   background-color: #2c3e50;
+   font-size: 14px;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
+  display:flex;
+  align-items: center;
+    justify-content: center;
+   
 }
 
 .input-bar {

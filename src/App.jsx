@@ -116,7 +116,7 @@ function App() {
     <div className="app-container">
       <div className="header">
         <div className="bot-icon">B</div>
-        <span>Chatbot x</span>
+        <span>Chatbot </span>
       </div>
 
       <div className="messages-container">
@@ -149,15 +149,19 @@ function App() {
           ref={fileInputRef}
           style={{ display: 'none' }}
         />
-        <button className="upload-button" onClick={() => fileInputRef.current?.click()}>+</button>
+        <button className="upload-button"
+         onClick={() => fileInputRef.current?.click()}><span style={{fontSize:'20px',}}>+</span></button>
 
         <div className="file-list">
           {uploadedFiles.map((file, index) => (
             <div key={index} className={`file-status ${selectedFileIndex === index ? 'selected' : ''}`}>
-              <span onClick={() => selectFile(index)}>
-                📄 {file.name} ({file.content.length} chars)
+              <span
+                style={{textAlign:'left'}}
+                onClick={() => selectFile(index)}
+>
+                 {file.name} <br/>({file.content.length} chars)
               </span>
-              <button onClick={() => deleteFile(index)}>x</button>
+              <button   onClick={() => deleteFile(index)}>x</button>
             </div>
           ))}
         </div>
