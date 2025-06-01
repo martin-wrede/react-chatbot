@@ -1,0 +1,9 @@
+name = "ai-image-site"
+compatibility_date = "2024-05-13"
+
+pages_build_output_dir = "./dist"  # ✅ Tells Wrangler where to find your built site
+
+
+[vars]
+
+ 
