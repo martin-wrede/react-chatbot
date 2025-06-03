@@ -1,4 +1,3 @@
-
 // functions/ai.js
 
 export async function onRequest(context) {
@@ -32,7 +31,7 @@ export async function onRequest(context) {
 
   try {
     const body = await request.text();
-    console.log("Raw request body:", body);
+    console.log("Raw request body length:", body.length);
     
     if (!body) {
       return new Response(
@@ -64,8 +63,10 @@ export async function onRequest(context) {
       );
     }
 
-    console.log("Parsed request body:", parsedBody);
-    const { message, messages = [] } = parsedBody;
+    console.log("Request contains files:", parsedBody.files?.length || 0);
+    console.log("Message length:", parsedBody.message?.length || 0);
+    
+    const { message, messages = [], files = [] } = parsedBody;
 
     if (!message) {
       return new Response(
@@ -80,25 +81,50 @@ export async function onRequest(context) {
       );
     }
 
+    // ✅ Enhanced system prompt for file handling
+    let systemPrompt = "Du bist ein hilfsreicher AI-Assistent. Antworte höflich und informativ auf Deutsch.";
+    
+    if (files.length > 0) {
+      systemPrompt += ` 
+      
+WICHTIG: Der Benutzer hat ${files.length} Textdatei(en) hochgeladen. Diese Dateien sind im Nachrichteninhalt unter "[Uploaded Files Context:]" zu finden. 
+- Lies und analysiere den Inhalt dieser Dateien sorgfältig
+- Beziehe dich direkt auf den Dateiinhalt in deinen Antworten
+- Wenn der Benutzer Fragen zu den Dateien stellt, zitiere relevante Teile daraus
+- Bestätige explizit, dass du die Dateien gelesen hast`;
+    }
+
     // ✅ Prepare messages for OpenAI Chat API
     const chatMessages = [
       {
         role: "system",
-        content: "Du bist ein hilfsreicher AI-Assistent. Antworte höflich und informativ auf Deutsch."
-      },
-      ...messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      {
-        role: "user",
-        content: message
+        content: systemPrompt
       }
     ];
 
-    console.log("Sending to OpenAI:", { model: "gpt-3.5-turbo", messageCount: chatMessages.length });
+    // Add conversation history (excluding the current message to avoid duplication)
+    if (messages.length > 0) {
+      // Only add messages that aren't the current one
+      const historyMessages = messages.slice(0, -1).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      chatMessages.push(...historyMessages);
+    }
 
-    // ✅ Send request to OpenAI Chat API
+    // Add the current message (which includes file content)
+    chatMessages.push({
+      role: "user",
+      content: message
+    });
+
+    console.log("=== DEBUG: Final message to OpenAI ===");
+    console.log("System prompt:", systemPrompt);
+    console.log("Total messages:", chatMessages.length);
+    console.log("Current message preview:", message.substring(0, 500) + "...");
+    console.log("=====================================");
+
+    // ✅ Send request to OpenAI Chat API with increased max_tokens for file responses
     const apiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -108,7 +134,7 @@ export async function onRequest(context) {
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
         messages: chatMessages,
-        max_tokens: 1000,
+        max_tokens: files.length > 0 ? 2000 : 1000, // More tokens when files are involved
         temperature: 0.7,
       }),
     });
@@ -116,11 +142,34 @@ export async function onRequest(context) {
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
       console.error("OpenAI API Error:", apiResponse.status, errorText);
+      
+      // Check for context length error
+      if (errorText.includes("context_length_exceeded")) {
+        return new Response(JSON.stringify({ 
+          error: "Die hochgeladenen Dateien sind zu groß. Bitte verwende kleinere Dateien oder teile sie auf.",
+          choices: [{
+            message: {
+              content: "Entschuldigung, die hochgeladenen Dateien sind zu groß für die Verarbeitung. Bitte verwende kleinere Dateien oder teile sie in mehrere kleinere Dateien auf."
+            }
+          }]
+        }), {
+          status: 200, // Return 200 so frontend handles it normally
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+      
       throw new Error(`OpenAI API Error: ${apiResponse.status} - ${errorText}`);
     }
 
     const data = await apiResponse.json();
     console.log("OpenAI Response received successfully");
+    
+    // Log if the response mentions files
+    const responseContent = data.choices?.[0]?.message?.content || "";
+    console.log("Response mentions files:", responseContent.toLowerCase().includes("datei"));
 
     return new Response(JSON.stringify(data), {
       status: 200,

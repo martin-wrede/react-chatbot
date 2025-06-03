@@ -1,25 +1,42 @@
 import React, { useState } from 'react';
+import { Upload, X, File } from 'lucide-react';
+import './App.css';
 
-  function App() {
+function App() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const userMessage = { role: 'user', content: inputMessage };
-    setMessages(prev => [...prev, userMessage]);
+    // Create user message with file context if files are uploaded
+    let messageContent = inputMessage;
+    if (uploadedFiles.length > 0) {
+      const fileContext = uploadedFiles.map(file => 
+        `[File: ${file.name}]\n${file.content}`
+      ).join('\n\n---\n\n');
+      
+      messageContent = `${messageContent}\n\n[Uploaded Files Context:]\n${fileContext}`;
+    }
+
+    const userMessage = { role: 'user', content: messageContent };
+    setMessages(prev => [...prev, { role: 'user', content: inputMessage }]); // Show only user input in UI
     setInputMessage('');
     setIsLoading(true);
 
     try {
+      // Send conversation history with file context included
+      const conversationHistory = [...messages, userMessage];
+      
       const response = await fetch('/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: inputMessage,
-          messages: messages
+          message: messageContent,
+          messages: conversationHistory,
+          files: uploadedFiles // Keep this for backend processing if needed
         }),
       });
 
@@ -56,50 +73,64 @@ import React, { useState } from 'react';
     }
   };
 
+  const handleFileUpload = async (event) => {
+    const files = Array.from(event.target.files);
+    
+    for (const file of files) {
+      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        try {
+          const content = await file.text();
+          const fileData = {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            content: content,
+            size: file.size,
+            uploadedAt: new Date().toLocaleString('de-DE')
+          };
+          
+          setUploadedFiles(prev => [...prev, fileData]);
+        } catch (error) {
+          console.error('Error reading file:', error);
+          alert(`Fehler beim Lesen der Datei ${file.name}`);
+        }
+      } else {
+        alert(`${file.name} ist keine Textdatei. Nur .txt Dateien sind erlaubt.`);
+      }
+    }
+    
+    event.target.value = '';
+  };
+
+  const deleteFile = (fileId) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
-    <div style={{ 
-      padding: '2rem', 
-      fontFamily: 'Arial, sans-serif',
-      maxWidth: '800px',
-      margin: '0 auto',
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '2rem' }}>AI Chatbot</h1>
+    <div className="app-container">
+      <h1 className="app-title">AI Chatbot</h1>
       
       {/* Chat Messages Container */}
-      <div style={{
-        flex: 1,
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        padding: '1rem',
-        marginBottom: '1rem',
-        overflowY: 'auto',
-        backgroundColor: '#f9f9f9'
-      }}>
+      <div className="chat-container">
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+          <div className="empty-chat">
             Beginne eine Unterhaltung...
           </div>
         ) : (
           messages.map((message, index) => (
             <div
               key={index}
-              style={{
-                marginBottom: '1rem',
-                padding: '0.75rem',
-                borderRadius: '8px',
-                backgroundColor: message.role === 'user' ? '#007bff' : '#fff',
-                color: message.role === 'user' ? 'white' : 'black',
-                alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                border: message.role === 'assistant' ? '1px solid #ddd' : 'none',
-                marginLeft: message.role === 'user' ? '20%' : '0',
-                marginRight: message.role === 'assistant' ? '20%' : '0'
-              }}
+              className={`message ${message.role === 'user' ? 'message-user' : 'message-assistant'}`}
             >
               <strong>{message.role === 'user' ? 'Du:' : 'AI:'}</strong>
-              <div style={{ marginTop: '0.25rem', whiteSpace: 'pre-wrap' }}>
+              <div className="message-content">
                 {message.content}
               </div>
             </div>
@@ -107,54 +138,90 @@ import React, { useState } from 'react';
         )}
         
         {isLoading && (
-          <div style={{
-            padding: '0.75rem',
-            borderRadius: '8px',
-            backgroundColor: '#fff',
-            border: '1px solid #ddd',
-            marginRight: '20%',
-            fontStyle: 'italic',
-            color: '#666'
-          }}>
+          <div className="message message-loading">
             AI tippt...
           </div>
         )}
       </div>
 
+      {/* File Upload Section */}
+      <div className="file-section">
+        <div className="file-upload-header">
+          <label className="upload-button">
+            <Upload size={16} />
+            Textdateien hochladen
+            <input
+              type="file"
+              multiple
+              accept=".txt,text/plain"
+              onChange={handleFileUpload}
+              className="file-input"
+            />
+          </label>
+          <span className="file-hint">
+            Nur .txt Dateien erlaubt
+          </span>
+        </div>
+
+        {uploadedFiles.length > 0 && (
+          <div className="uploaded-files">
+            <h4 className="files-title">
+              Hochgeladene Dateien ({uploadedFiles.length}):
+            </h4>
+            <div className="files-list">
+              {uploadedFiles.map((file) => (
+                <div key={file.id} className="file-item">
+                  <div className="file-info">
+                    <File size={14} color="#666" />
+                    <div className="file-details">
+                      <div className="file-name">
+                        {file.name}
+                      </div>
+                      <div className="file-meta">
+                        {formatFileSize(file.size)} • {file.uploadedAt}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteFile(file.id)}
+                    className="delete-button"
+                    title="Datei löschen"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Input Area */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <textarea
-          placeholder="Schreibe deine Nachricht..."
-          value={inputMessage}
-          onChange={e => setInputMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={isLoading}
-          style={{
-            flex: 1,
-            padding: '0.75rem',
-            borderRadius: '8px',
-            border: '1px solid #ddd',
-            resize: 'none',
-            minHeight: '60px',
-            fontFamily: 'Arial, sans-serif'
-          }}
-          rows={2}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={isLoading || !inputMessage.trim()}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: isLoading || !inputMessage.trim() ? '#ccc' : '#007bff',
-            color: 'white',
-            cursor: isLoading || !inputMessage.trim() ? 'not-allowed' : 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          {isLoading ? 'Senden...' : 'Senden'}
-        </button>
+      <div className="input-area">
+        {uploadedFiles.length > 0 && (
+          <div className="attached-files-indicator">
+            <File size={14} />
+            <span>{uploadedFiles.length} Datei(en) angehängt</span>
+          </div>
+        )}
+        <div className="input-controls">
+          <textarea
+            placeholder="Schreibe deine Nachricht..."
+            value={inputMessage}
+            onChange={e => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading}
+            className="message-input"
+            rows={2}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={isLoading || !inputMessage.trim()}
+            className={`send-button ${(isLoading || !inputMessage.trim()) ? 'disabled' : ''}`}
+          >
+            {isLoading ? 'Senden...' : 'Senden'}
+          </button>
+        </div>
       </div>
     </div>
   );
